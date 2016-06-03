@@ -4,6 +4,7 @@ import org.fransis.digitales.core.DSP;
 import org.fransis.digitales.core.FIR;
 import org.fransis.digitales.core.Filter;
 import org.omg.CORBA.DoubleHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -27,10 +28,16 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("linein")
-public class FIlterController {
+public class FilterController {
 
     private Thread dsp;
     private List<Filter> filters = new ArrayList<>();
+    @Value(value = "${input.index}")
+    private int inputIndex;
+    @Value(value = "${output.index}")
+    private int outputIndex;
+    private SourceDataLine sourceDataLine = null;
+    private TargetDataLine targetDataLine = null;
 
     @RequestMapping(method = RequestMethod.POST, path = "/signal")
     public HttpEntity<Void> signal(){
@@ -42,7 +49,14 @@ public class FIlterController {
 
     @RequestMapping(method = RequestMethod.DELETE,path = "/signal" )
     public HttpEntity<Void> signalDelete(){
-        if(dsp != null){ dsp.stop(); dsp = null;}
+        if(dsp != null){
+            dsp.stop();
+            dsp = null;
+            sourceDataLine.stop();
+            sourceDataLine.close();
+            targetDataLine.stop();
+            targetDataLine.close();
+        }
         return (ResponseEntity.status(HttpStatus.OK)).build();
     }
 
@@ -71,12 +85,13 @@ public class FIlterController {
 
     private Runnable runFilter(List<Filter> f){
 
-        SourceDataLine sourceDataLine = null;
+
         AudioFormat audioFormat = null;
         AudioInputStream audioInputStream  = null;
 
         Mixer.Info[] info = AudioSystem.getMixerInfo();
         Mixer.Info usbCard = null;
+        Mixer.Info usbCardOut = null;
 
         int m = 0;
 
@@ -88,6 +103,9 @@ public class FIlterController {
             m++;
         }
 
+        usbCard = info[inputIndex];
+        usbCardOut = info[outputIndex];
+
         File fileIn = new File("sample.wav");
         try {
             AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(fileIn);
@@ -97,7 +115,7 @@ public class FIlterController {
             //audioInputStream =
             //        AudioSystem.getAudioInputStream(fileIn);
 
-            TargetDataLine targetDataLine = AudioSystem.getTargetDataLine(audioFormat, usbCard);
+            targetDataLine = AudioSystem.getTargetDataLine(audioFormat, usbCard);
             targetDataLine.open();
             targetDataLine.start();
             audioInputStream = new AudioInputStream(targetDataLine);
@@ -108,7 +126,7 @@ public class FIlterController {
                             SourceDataLine.class,
                             audioFileFormat.getFormat());
             //sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfoOut);
-            sourceDataLine = AudioSystem.getSourceDataLine(audioFormat, usbCard);
+            sourceDataLine = AudioSystem.getSourceDataLine(audioFormat, usbCardOut);
 
             Runnable dsp = new DSP(audioInputStream,sourceDataLine, f, audioFormat);
             return dsp;
