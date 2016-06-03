@@ -1,3 +1,5 @@
+package org.fransis.digitales.core;
+
 import javax.sound.sampled.*;
 import java.util.List;
 

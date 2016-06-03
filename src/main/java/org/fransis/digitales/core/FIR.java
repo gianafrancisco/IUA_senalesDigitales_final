@@ -1,4 +1,8 @@
-class FIR implements Filter {
+package org.fransis.digitales.core;
+
+import org.fransis.digitales.core.Filter;
+
+public class FIR implements Filter {
     private int length;
     private double[] delayLine;
     private double[] impulseResponse;
@@ -14,6 +18,7 @@ class FIR implements Filter {
         delayLine = new double[length];
     }
 
+
     public double apply(double value) {
         delayLine[count] = value;
         double result = 0.0;
@@ -24,5 +29,13 @@ class FIR implements Filter {
             }
         if (++count >= length) count = 0;
         return result;
+    }
+
+    @Override
+    public double[] coefficients() {
+        return impulseResponse;
+    }
+    public double[] getImpulseResponse() {
+        return impulseResponse;
     }
 }

@@ -1,3 +1,5 @@
+package org.fransis.digitales.core;
+
 /**
  * Created by francisco on 5/31/16.
  */
@@ -36,4 +38,5 @@ public interface Filter {
     };
 
     double apply(double value);
+    double[] coefficients();
 }
